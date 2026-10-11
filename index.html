@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bookmarks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="referrer" content="no-referrer">
+<!-- Privacidad: esta política impide que la página haga CUALQUIER conexión de red (fetch, XHR, imágenes remotas, etc.). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>My Bookmark Universe</title>
+<style>
+:root{
+  --bg:#f3f4fb;--bg2:#e9ebfa;--panel:rgba(255,255,255,.72);--card:#ffffff;--text:#14152a;--muted:#6b6e8a;
+  --line:rgba(20,21,42,.09);--accent:#6c5ce7;--accent2:#a66cff;--danger:#e5484d;--star:#f5a524;
+  --shadow:0 1px 2px rgba(20,21,60,.06),0 10px 28px rgba(20,21,60,.08);--soft:rgba(108,92,231,.09);
+  --safe-t:env(safe-area-inset-top,0px);--safe-b:env(safe-area-inset-bottom,0px);--safe-l:env(safe-area-inset-left,0px);--safe-r:env(safe-area-inset-right,0px);
+}
+:root[data-theme="dark"]{
+  --bg:#0a0b15;--bg2:#12142a;--panel:rgba(22,24,46,.72);--card:#171a31;--text:#eef0ff;--muted:#9a9db9;
+  --line:rgba(255,255,255,.08);--shadow:0 1px 2px rgba(0,0,0,.45),0 12px 32px rgba(0,0,0,.4);--soft:rgba(140,124,255,.14);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a0b15;--bg2:#12142a;--panel:rgba(22,24,46,.72);--card:#171a31;--text:#eef0ff;--muted:#9a9db9;
+    --line:rgba(255,255,255,.08);--shadow:0 1px 2px rgba(0,0,0,.45),0 12px 32px rgba(0,0,0,.4);--soft:rgba(140,124,255,.14);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color:var(--text);background:var(--bg);-webkit-font-smoothing:antialiased;overflow:hidden;
+  background-image:radial-gradient(900px 500px at 85% -10%,rgba(166,108,255,.18),transparent 60%),radial-gradient(700px 500px at -5% 105%,rgba(108,92,231,.16),transparent 60%);
+  background-attachment:fixed;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+a{color:inherit;text-decoration:none}
+.i{width:20px;height:20px;flex:none}
+.app{display:grid;grid-template-columns:292px minmax(0,1fr);height:100vh;height:100dvh}
+
+/* ---------- Sidebar ---------- */
+.side{display:flex;flex-direction:column;min-height:0;background:var(--panel);border-right:1px solid var(--line);
+  -webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);
+  padding:calc(var(--safe-t) + 18px) 14px calc(var(--safe-b) + 14px) calc(var(--safe-l) + 14px)}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 8px 18px}
+.logo{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;color:#fff;font-size:22px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 20px rgba(108,92,231,.4)}
+.brand b{display:block;font-size:16px;letter-spacing:-.2px}.brand span{font-size:13px;color:var(--muted);letter-spacing:.3px}
+.scroll{overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;flex:1;min-height:0;margin:0 -6px;padding:0 6px}
+.sect{font-size:11.5px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);padding:18px 10px 8px;font-weight:600}
+.nbtn{display:flex;align-items:center;gap:10px;width:100%;min-height:42px;padding:8px 12px;border:0;background:transparent;border-radius:12px;text-align:left;color:var(--text)}
+.nbtn .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14.5px}
+.nbtn em{font-style:normal;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.nbtn.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 6px 16px rgba(108,92,231,.35)}
+.nbtn.on em{color:rgba(255,255,255,.85)}
+@media (hover:hover){.nbtn:not(.on):hover{background:var(--soft)}}
+.node{display:flex;align-items:center;padding-left:calc(var(--d,0)*14px)}
+.chev{width:30px;height:42px;flex:none;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;border-radius:10px;padding:0}
+.chev svg{width:15px;height:15px;transition:transform .15s}.chev.open svg{transform:rotate(90deg)}
+.chev.ph{visibility:hidden}
+.sidefoot{padding-top:12px;border-top:1px solid var(--line);margin-top:8px;display:grid;gap:8px}
+
+/* ---------- Main ---------- */
+.main{overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;min-width:0;position:relative}
+.top{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;align-items:center;gap:10px;
+  padding:calc(var(--safe-t) + 12px) calc(var(--safe-r) + 22px) 12px 22px;
+  background:var(--panel);-webkit-backdrop-filter:blur(22px) saturate(1.5);backdrop-filter:blur(22px) saturate(1.5);border-bottom:1px solid var(--line)}
+.search{flex:1 1 260px;display:flex;align-items:center;gap:10px;min-height:46px;padding:0 14px;border-radius:15px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.search:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--soft)}
+.search input{flex:1;min-width:0;border:0;background:transparent;outline:0;font-size:16px;height:44px}
+.search svg{color:var(--muted)}
+.search .clr{border:0;background:var(--soft);width:26px;height:26px;border-radius:50%;display:none;place-items:center;padding:0;color:var(--muted)}
+.search .clr svg{width:14px;height:14px}.search.has .clr{display:grid}
+.icon{width:46px;height:46px;border-radius:14px;border:1px solid var(--line);background:var(--card);display:inline-grid;place-items:center;box-shadow:var(--shadow);padding:0;flex:none}
+.only-narrow{display:none}
+.seg{display:flex;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:3px;box-shadow:var(--shadow)}
+.seg button{width:44px;height:38px;border:0;background:transparent;border-radius:11px;display:grid;place-items:center;color:var(--muted);padding:0}
+.seg button.on{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+select{height:46px;border-radius:14px;border:1px solid var(--line);background:var(--card);padding:0 12px;font-size:15px;box-shadow:var(--shadow);max-width:180px}
+select:disabled{opacity:.5}
+.content{padding:20px calc(var(--safe-r) + 22px) calc(var(--safe-b) + 60px) 22px}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:12px;margin-bottom:18px}
+.head h1{margin:0;font-size:26px;letter-spacing:-.5px;line-height:1.15}
+.head .sub{color:var(--muted);font-size:14px;margin-top:4px}
+.head .grow{flex:1;min-width:200px}
+.btn{min-height:44px;padding:0 18px;border-radius:13px;border:1px solid var(--line);background:var(--card);font-weight:600;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:var(--shadow)}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:0;box-shadow:0 8px 20px rgba(108,92,231,.38)}
+.btn.danger{color:var(--danger)}.btn.dangerfill{background:var(--danger);color:#fff;border:0}
+.btn.ghost{box-shadow:none;background:transparent}.btn.wide{width:100%}.btn.sm{min-height:38px;padding:0 14px;font-size:14px}
+.banner{margin:14px calc(var(--safe-r) + 22px) 0 22px;padding:12px 14px;border-radius:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:14px;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow)}
+.banner.warn{border-color:rgba(245,165,36,.5);background:rgba(245,165,36,.12)}
+.banner span{flex:1 1 240px}
+
+.feathead{font-size:12px;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-weight:700;margin:0 0 10px}
+.strip{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 16px;margin-bottom:8px;scrollbar-width:none}
+.strip::-webkit-scrollbar{display:none}
+.fchip{flex:none;display:flex;align-items:center;gap:10px;max-width:260px;min-height:48px;padding:0 16px 0 10px;border-radius:15px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow)}
+.fchip img,.fchip b{width:28px;height:28px;border-radius:8px;object-fit:contain;flex:none}
+.fchip b{display:grid;place-items:center;background:var(--soft);color:var(--accent);font-size:14px}
+.fchip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;font-weight:600}
+
+/* ---------- Cards (grid) ---------- */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:16px}
+.card{position:relative;display:flex;flex-direction:column;border-radius:20px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);overflow:hidden;content-visibility:auto;contain-intrinsic-size:auto 270px}
+@media (hover:hover){.card{transition:transform .18s,box-shadow .18s}.card:hover{transform:translateY(-3px)}}
+.thumb{display:block;aspect-ratio:16/9;position:relative;overflow:hidden;background:var(--bg2)}
+.thumb .cover{width:100%;height:100%;object-fit:cover;display:block}
+.fb{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  background:linear-gradient(135deg,hsl(var(--h),68%,56%),hsl(var(--h2),70%,40%))}
+.fb .tile{width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.95);display:grid;place-items:center;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.fb .tile img{width:30px;height:30px;object-fit:contain;image-rendering:auto}
+.fb .tile b{font-size:24px;color:#333}
+.fb .dom{color:rgba(255,255,255,.92);font-size:12.5px;font-weight:600;max-width:88%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 4px rgba(0,0,0,.3)}
+.cbody{padding:12px 14px 6px;min-width:0;flex:1}
+.ctitle{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-weight:650;font-size:15px;line-height:1.3;word-break:break-word}
+.cmeta{display:flex;gap:6px;margin-top:6px;font-size:12.5px;color:var(--muted);min-width:0}
+.cmeta span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cmeta .cat{min-width:0}.cmeta .dot{flex:none}
+.acts{display:flex;gap:2px;padding:4px 8px 10px;justify-content:flex-end}
+.act{width:44px;height:44px;border:0;background:transparent;border-radius:12px;display:grid;place-items:center;color:var(--muted);padding:0}
+.act svg{width:19px;height:19px}
+@media (hover:hover){.act:hover{background:var(--soft);color:var(--text)}}
+.act.on{color:var(--star)}.act.on svg{fill:var(--star)}
+.act.del:active{color:var(--danger)}
+
+/* ---------- Rows (list) ---------- */
+.rows{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:12px;padding:6px 6px 6px 12px;border-radius:16px;background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);content-visibility:auto;contain-intrinsic-size:auto 64px}
+.rico{flex:none;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,hsl(var(--h),68%,56%),hsl(var(--h2),70%,42%))}
+.rico span{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.95);display:grid;place-items:center;overflow:hidden}
+.rico img{width:20px;height:20px;object-fit:contain}.rico b{color:#333;font-size:15px}
+.rmain{flex:1;min-width:0}.rmain .ctitle{-webkit-line-clamp:1}
+.rurl{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+.chip{flex:none;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;padding:5px 10px;border-radius:999px;background:var(--soft);color:var(--accent);font-weight:600}
+.rdate{flex:none;font-size:12.5px;color:var(--muted);width:84px;text-align:right}
+.row .acts{padding:0}
+
+/* ---------- Empty / welcome ---------- */
+.empty{display:grid;place-items:center;text-align:center;padding:60px 20px;color:var(--muted)}
+.empty .big{width:84px;height:84px;border-radius:26px;display:grid;place-items:center;margin:0 auto 18px;color:#fff;font-size:38px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 14px 34px rgba(108,92,231,.4)}
+.empty h2{margin:0 0 8px;color:var(--text);font-size:22px}
+.empty p{max-width:520px;margin:0 auto 18px;line-height:1.55}
+.steps{text-align:left;max-width:560px;margin:22px auto 0;display:grid;gap:10px;font-size:14px;color:var(--text)}
+.steps div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;line-height:1.5}
+.steps b{color:var(--accent)}
+.drop{outline:3px dashed var(--accent);outline-offset:-12px}
+
+/* ---------- Dialogs ---------- */
+dialog{border:0;border-radius:24px;padding:0;width:min(560px,92vw);max-height:88dvh;background:var(--card);color:var(--text);box-shadow:0 30px 80px rgba(0,0,0,.45);overflow:hidden}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(8,9,22,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.dh{padding:22px 24px 6px}.dh h3{margin:0;font-size:20px;letter-spacing:-.3px}.dh p{margin:8px 0 0;color:var(--muted);line-height:1.5;font-size:14.5px}
+.db{padding:14px 24px;overflow:auto;-webkit-overflow-scrolling:touch}
+.df{padding:12px 24px 22px;display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.df .btn{flex:1 1 auto}
+label.f{display:block;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--muted)}
+label.f input[type=text],label.f input[type=url],label.f input:not([type]){display:block;width:100%;margin-top:6px;height:48px;border-radius:13px;border:1px solid var(--line);background:var(--bg);padding:0 14px;font-size:16px;color:var(--text);outline:0}
+label.f input:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--soft)}
+.err{color:var(--danger);font-size:13.5px;min-height:18px;margin:-4px 0 8px}
+.tprev{display:flex;gap:12px;align-items:center;margin-top:6px}
+.tprev .pv{width:112px;aspect-ratio:16/9;border-radius:12px;background:var(--bg2);border:1px solid var(--line);overflow:hidden;display:grid;place-items:center;color:var(--muted);font-size:12px}
+.tprev .pv img{width:100%;height:100%;object-fit:cover}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
+.stat{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px}
+.stat b{display:block;font-size:22px;letter-spacing:-.5px}.stat span{font-size:12px;color:var(--muted)}
+.list-btns{display:grid;gap:10px}
+.list-btns .btn{justify-content:flex-start;min-height:52px}
+.helptxt{font-size:14.5px;line-height:1.6}.helptxt h4{margin:16px 0 4px;font-size:15px}.helptxt p,.helptxt ul{margin:4px 0;color:var(--muted)}
+.helptxt ul{padding-left:20px}.helptxt code{background:var(--bg);padding:1px 6px;border-radius:6px;font-size:13px}
+
+/* ---------- Toast / busy ---------- */
+.toast{position:fixed;left:50%;bottom:calc(var(--safe-b) + 22px);transform:translate(-50%,30px);opacity:0;pointer-events:none;z-index:100;
+  display:flex;gap:14px;align-items:center;max-width:min(92vw,560px);padding:13px 18px;border-radius:16px;background:#1b1d36;color:#fff;box-shadow:0 14px 40px rgba(0,0,0,.4);transition:.25s;font-size:14.5px}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{border:0;background:rgba(255,255,255,.16);color:#fff;border-radius:10px;padding:8px 12px;font-weight:700}
+.busy{position:fixed;inset:0;z-index:200;display:none;place-items:center;background:rgba(8,9,22,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.busy.show{display:grid}
+.busy div{background:var(--card);padding:26px 32px;border-radius:22px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.spin{width:34px;height:34px;border-radius:50%;border:4px solid var(--soft);border-top-color:var(--accent);margin:0 auto 14px;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.scrim{display:none}
+
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;left:0;top:0;bottom:0;width:min(86vw,330px);z-index:40;transform:translateX(-104%);transition:transform .26s ease;box-shadow:0 0 60px rgba(0,0,0,.35);background:var(--card)}
+  .app.nav-open .side{transform:none}
+  .app.nav-open .scrim{display:block;position:fixed;inset:0;z-index:30;background:rgba(8,9,22,.45)}
+  .only-narrow{display:inline-grid}
+  .top{padding-left:calc(var(--safe-l) + 14px);padding-right:calc(var(--safe-r) + 14px)}
+  .content{padding-left:calc(var(--safe-l) + 14px);padding-right:calc(var(--safe-r) + 14px)}
+  .banner{margin-left:14px;margin-right:14px}
+  .chip,.rdate{display:none}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="scrim" id="scrim"></div>
+
+  <aside class="side" id="side">
+    <div class="brand"><div class="logo">✦</div><div><b>My Bookmark</b><span>Universe</span></div></div>
+    <div class="scroll">
+      <nav id="smart"></nav>
+      <div class="sect">Carpetas</div>
+      <div id="tree"></div>
+    </div>
+    <div class="sidefoot">
+      <button class="btn wide" id="btnData"><span data-i="db"></span>Datos y copias</button>
+    </div>
+  </aside>
+
+  <main class="main" id="main">
+    <header class="top">
+      <button class="icon only-narrow" id="btnMenu" aria-label="Abrir menú" data-i="menu"></button>
+      <div class="search" id="searchBox">
+        <span data-i="search"></span>
+        <input id="q" type="search" placeholder="Buscar por nombre, URL o categoría…" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Buscar">
+        <button class="clr" id="qClear" aria-label="Borrar búsqueda" data-i="x"></button>
+      </div>
+      <div class="seg" id="viewSeg">
+        <button data-v="grid" aria-label="Vista de cuadrícula" data-i="grid"></button>
+        <button data-v="list" aria-label="Vista de lista" data-i="list"></button>
+      </div>
+      <select id="sort" aria-label="Ordenar">
+        <option value="orig">Orden original</option>
+        <option value="new">Más recientes</option>
+        <option value="old">Más antiguos</option>
+        <option value="az">A → Z</option>
+        <option value="za">Z → A</option>
+        <option value="dom">Por dominio</option>
+      </select>
+      <button class="icon" id="btnAdd" aria-label="Agregar enlace" title="Agregar enlace" data-i="plus"></button>
+      <button class="icon" id="btnTheme" aria-label="Cambiar tema" title="Tema"></button>
+    </header>
+    <div id="banner"></div>
+    <section class="content" id="content">
+      <div class="head" id="head"></div>
+      <div id="feat"></div>
+      <div id="list" class="grid"></div>
+      <div id="sentinel" style="height:1px"></div>
+      <div id="empty"></div>
+    </section>
+  </main>
+</div>
+
+<input type="file" id="file" accept=".html,.htm,.json,text/html,application/json" hidden>
+<input type="file" id="imgFile" accept="image/*" hidden>
+
+<!-- Editar / agregar -->
+<dialog id="dlgEdit">
+  <form id="formEdit" novalidate>
+    <div class="dh"><h3 id="edTitle">Editar enlace</h3></div>
+    <div class="db">
+      <label class="f">Título<input id="edT" type="text" autocomplete="off"></label>
+      <label class="f">URL<input id="edU" type="url" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <label class="f">Categoría (usá “/” para subcarpetas)<input id="edC" type="text" list="catList" autocomplete="off" placeholder="Ej: Trabajo / Referencias"></label>
+      <datalist id="catList"></datalist>
+      <div class="f" style="margin-bottom:6px">Miniatura personalizada (opcional)</div>
+      <div class="tprev"><div class="pv" id="edPv">Sin imagen</div>
+        <button type="button" class="btn sm" id="edPick">Elegir imagen…</button>
+        <button type="button" class="btn sm ghost" id="edNoThumb">Quitar</button></div>
+      <div class="err" id="edErr" role="alert"></div>
+    </div>
+    <div class="df">
+      <button type="button" class="btn" id="edCancel">Cancelar</button>
+      <button type="submit" class="btn primary">Guardar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Elegir (confirmaciones) -->
+<dialog id="dlgChoose">
+  <div class="dh"><h3 id="chTitle"></h3><p id="chText"></p></div>
+  <div class="df" id="chBtns"></div>
+</dialog>
+
+<!-- Pedir texto -->
+<dialog id="dlgAsk">
+  <form id="formAsk" novalidate>
+    <div class="dh"><h3 id="akTitle"></h3></div>
+    <div class="db"><label class="f"><span id="akLabel"></span><input id="akInput" type="text" autocomplete="off"></label></div>
+    <div class="df"><button type="button" class="btn" id="akCancel">Cancelar</button><button type="submit" class="btn primary">Aceptar</button></div>
+  </form>
+</dialog>
+
+<!-- Datos -->
+<dialog id="dlgData">
+  <div class="dh"><h3>Datos y copias de seguridad</h3><p>Todo vive en este dispositivo y en este navegador. Nada se envía a ningún servidor.</p></div>
+  <div class="db">
+    <div class="stats" id="stats"></div>
+    <div class="list-btns">
+      <button class="btn" id="dImport"><span data-i="upload"></span>Importar archivo (favoritos .html o copia .json)</button>
+      <button class="btn" id="dExportJson"><span data-i="download"></span>Exportar copia de seguridad (.json)</button>
+      <button class="btn" id="dExportHtml"><span data-i="download"></span>Exportar como favoritos (.html para Chrome/Safari/Edge)</button>
+      <button class="btn" id="dHelp"><span data-i="info"></span>Ayuda, privacidad y sincronización</button>
+      <button class="btn danger" id="dWipe"><span data-i="trash"></span>Borrar toda la biblioteca</button>
+    </div>
+  </div>
+  <div class="df"><button class="btn primary" id="dClose">Cerrar</button></div>
+</dialog>
+
+<!-- Ayuda -->
+<dialog id="dlgHelp">
+  <div class="dh"><h3>Cómo funciona</h3></div>
+  <div class="db helptxt">
+    <h4>Privacidad</h4>
+    <p>Esta página no usa servidor ni claves API y su política de seguridad bloquea cualquier conexión de red. Tus favoritos nunca salen del dispositivo. Por eso las miniaturas de los sitios no se descargan: se usa el favicon que ya venía en tu archivo y una tarjeta de color de respaldo. Podés poner tu propia imagen en cada enlace.</p>
+    <h4>Guardado local</h4>
+    <p>Los datos se guardan en el almacenamiento del navegador (IndexedDB) de <b>este</b> dispositivo y de <b>este</b> navegador. No se sincronizan solos: la compu y el iPad tienen bibliotecas separadas.</p>
+    <ul>
+      <li>Para pasar tu biblioteca de un dispositivo a otro: <b>Exportar copia (.json)</b> y luego <b>Importar</b> en el otro.</li>
+      <li>Safari puede borrar datos de sitios que no abrís durante ~7 días. Si agregás la página a la pantalla de inicio del iPad (Compartir → “Añadir a pantalla de inicio”) queda protegida de esa limpieza.</li>
+      <li>Borrar “datos de sitios web” o el historial puede eliminar la biblioteca. Hacé copias periódicas.</li>
+    </ul>
+    <h4>Atajos</h4>
+    <p>En teclado: <code>/</code> enfoca el buscador y <code>Esc</code> lo limpia.</p>
+  </div>
+  <div class="df"><button class="btn primary" id="hClose">Entendido</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAct" hidden></button></div>
+<div class="busy" id="busy"><div><div class="spin"></div><span id="busyMsg">Procesando…</span></div></div>
+
+<script>
+'use strict';
+/* =============== Utilidades y parser (probados aparte) =============== */
+/*PARSER_START*/
+const SEP='\u241F';
+const taDec=document.createElement('textarea');
+const dec=s=>s.indexOf('&')<0?s:(taDec.innerHTML=s,taDec.value);
+const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function hostOf(u){try{return new URL(u).hostname.replace(/^www\./,'')||u}catch(e){return u}}
+const ICON_OK=/^data:image\/(png|jpeg|jpg|gif|webp|x-icon|vnd\.microsoft\.icon|svg\+xml)[;,][A-Za-z0-9+\/=%;,.\-_ ]*$/i;
+const URL_OK=/^https?:\/\//i;
+
+/* Parser Netscape basado en tokens (más robusto y rápido que DOMParser para archivos enormes). */
+function parseNetscape(text){
+  const re=/<DL\b[^>]*>|<\/DL\s*>|<H3\b([^>]*)>([\s\S]*?)<\/H3\s*>|<A\b([^>]*)>([\s\S]*?)<\/A\s*>/gi;
+  const stack=[],icons=[],iconMap=new Map(),out=[],folders=new Set();
+  let pending=null,skipped=0,m;
+  while((m=re.exec(text))){
+    if(m[2]!==undefined){
+      pending=dec(m[2].replace(/<[^>]*>/g,'')).trim()||'Sin nombre';
+    }else if(m[4]!==undefined){
+      const at={};
+      m[3].replace(/([A-Za-z_\-]+)\s*=\s*"([^"]*)"/g,(_,k,v)=>{at[k.toUpperCase()]=v;return ''});
+      const href=dec(at.HREF||'').trim();
+      if(!URL_OK.test(href)){skipped++;continue}
+      const host=hostOf(href);
+      const title=dec(m[4].replace(/<[^>]*>/g,'')).replace(/\s+/g,' ').trim()||host;
+      let add=parseInt(at.ADD_DATE,10)||0; if(add>1e11)add=Math.floor(add/1000);
+      let icon=null;
+      const ic=at.ICON;
+      if(ic&&ic.length<300000&&ICON_OK.test(ic)){
+        icon=iconMap.get(ic);
+        if(icon===undefined){icon=icons.push(ic)-1;iconMap.set(ic,icon)}
+      }
+      const path=stack.filter(x=>x!==null);
+      if(path.length)folders.add(path.join(SEP));
+      out.push({t:title,u:href,p:path,a:add,f:false,icon,_thumb:null});
+    }else if(/^<\//.test(m[0])){stack.pop()}
+    else{stack.push(pending);pending=null}
+  }
+  return {links:out,icons,skipped,folders:folders.size};
+}
+/*PARSER_END*/
+
+/* =============== Estado =============== */
+const $=s=>document.querySelector(s);
+const PAGE=90;
+const S={links:[],icons:[],thumbs:{},view:'grid',sort:'orig',theme:'auto',nav:{t:'all'},q:'',vis:[],shown:0,
+  open:new Set(),dirty:{},volatile:false,tree:null,urlCount:new Map(),favs:0,dups:0,noFolder:0,sortLocked:false};
+let db=null,saveTimer=null,lastRemoved=null;
+const col=new Intl.Collator('es',{sensitivity:'base',numeric:true});
+const uid=(()=>{let n=0;return()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8)+(n++).toString(36)})();
+const now=()=>Math.floor(Date.now()/1000);
+
+const IC={
+  star:'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
+  edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  trash:'<path d="M3 6h18"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',
+  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/>',
+  auto:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor"/>',
+  db:'<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  copy:'<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  chev:'<path d="m9 6 6 6-6 6"/>',
+  layers:'<path d="m12 3 9 5-9 5-9-5 9-5Z"/><path d="m3 13 9 5 9-5"/>',
+  upload:'<path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/>',
+  download:'<path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 20h16"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'
+};
+const ic=n=>`<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+function hue(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%360}
+
+/* =============== Modelo =============== */
+function derive(l){
+  l.host=hostOf(l.u);l.pk=l.p.join(SEP);
+  l.cat=l.p.length?l.p.join(' › '):'Sin carpeta';
+  l.h=norm(l.t+' '+l.u+' '+l.p.join(' '));
+}
+function hydrate(r){const l={id:r.id,t:r.t,u:r.u,p:r.p||[],a:r.a||0,f:!!r.f,i:r.i==null?-1:r.i,o:r.o||0};derive(l);return l}
+const ser=l=>({id:l.id,t:l.t,u:l.u,p:l.p,a:l.a,f:l.f,i:l.i,o:l.o});
+
+function reindex(){
+  S.urlCount=new Map();S.favs=0;S.noFolder=0;
+  const root={name:'',path:[],key:'',kids:new Map(),n:0};
+  for(const l of S.links){
+    S.urlCount.set(l.u,(S.urlCount.get(l.u)||0)+1);
+    if(l.f)S.favs++;
+    if(!l.p.length)S.noFolder++;
+    let node=root;node.n++;
+    for(let i=0;i<l.p.length;i++){
+      const nm=l.p[i];let k=node.kids.get(nm);
+      if(!k){const path=l.p.slice(0,i+1);k={name:nm,path,key:path.join(SEP),kids:new Map(),n:0};node.kids.set(nm,k)}
+      k.n++;node=k;
+    }
+  }
+  S.dups=0;for(const l of S.links)if(S.urlCount.get(l.u)>1)S.dups++;
+  S.tree=root;
+}
+function findNode(key){
+  if(!key)return S.tree;
+  let node=S.tree;
+  for(const seg of key.split(SEP)){node=node&&node.kids.get(seg);if(!node)return null}
+  return node;
+}
+
+/* =============== Persistencia (IndexedDB) =============== */
+function openDB(){return new Promise((res,rej)=>{
+  if(!window.indexedDB)return rej(new Error('IndexedDB no disponible'));
+  const r=indexedDB.open('my-bookmark-universe',1);
+  r.onupgradeneeded=()=>r.result.createObjectStore('kv');
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error||new Error('No se pudo abrir la base'));
+  r.onblocked=()=>rej(new Error('Base bloqueada por otra pestaña'));
+})}
+const idbGet=k=>new Promise((res,rej)=>{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error)});
+function mark(...keys){keys.forEach(k=>S.dirty[k]=true);clearTimeout(saveTimer);saveTimer=setTimeout(flush,450)}
+async function flush(){
+  clearTimeout(saveTimer);
+  if(!db||S.volatile)return;
+  const d=S.dirty;if(!Object.keys(d).length)return;S.dirty={};
+  try{
+    const tx=db.transaction('kv','readwrite'),st=tx.objectStore('kv');
+    if(d.links)st.put(S.links.map(ser),'links');
+    if(d.icons)st.put(S.icons,'icons');
+    if(d.thumbs)st.put(S.thumbs,'thumbs');
+    await new Promise((res,rej)=>{tx.oncomplete=res;tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error('Transacción cancelada'))});
+  }catch(e){
+    Object.assign(S.dirty,d);
+    toast('No se pudo guardar en el dispositivo (¿almacenamiento lleno?). Exportá una copia de seguridad ahora.',{ms:7000});
+    console.error(e);
+  }
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')flush()});
+window.addEventListener('pagehide',flush);
+
+/* Preferencias livianas */
+function loadPrefs(){try{const p=JSON.parse(localStorage.getItem('mbu.prefs')||'{}');S.view=p.view||'grid';S.sort=p.sort||'orig';S.theme=p.theme||'auto'}catch(e){}}
+function savePrefs(){try{localStorage.setItem('mbu.prefs',JSON.stringify({view:S.view,sort:S.sort,theme:S.theme}))}catch(e){}}
+function applyTheme(){
+  const r=document.documentElement;
+  if(S.theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',S.theme);
+  const dark=S.theme==='dark'||(S.theme==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches);
+  $('#btnTheme').innerHTML=ic(S.theme==='auto'?'auto':dark?'moon':'sun');
+  $('#btnTheme').title='Tema: '+({auto:'automático',light:'claro',dark:'oscuro'})[S.theme];
+  const m=document.querySelector('meta[name=color-scheme]');if(m)m.content=S.theme==='auto'?'light dark':S.theme;
+}
+
+/* =============== UI helpers =============== */
+let toastT=null;
+function toast(msg,{label,fn,ms=3800}={}){
+  const t=$('#toast');$('#toastMsg').textContent=msg;
+  const b=$('#toastAct');
+  if(label){b.hidden=false;b.textContent=label;b.onclick=()=>{t.classList.remove('show');fn&&fn()}}else{b.hidden=true;b.onclick=null}
+  t.classList.add('show');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),ms);
+}
+function busy(msg){const b=$('#busy');if(msg){$('#busyMsg').textContent=msg;b.classList.add('show')}else b.classList.remove('show')}
+const tick=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,24)));
+function choose({title,text,opts}){return new Promise(res=>{
+  const d=$('#dlgChoose');$('#chTitle').textContent=title;$('#chText').textContent=text||'';
+  const box=$('#chBtns');box.innerHTML='';
+  opts.forEach(o=>{const b=document.createElement('button');b.type='button';b.className='btn '+(o.cls||'');b.textContent=o.label;b.onclick=()=>{d.dataset.v=o.v;d.close()};box.appendChild(b)});
+  d.dataset.v='';d.onclose=()=>res(d.dataset.v||null);d.showModal();
+})}
+const confirmBox=({title,text,ok='Aceptar',danger})=>choose({title,text,opts:[{v:'',label:'Cancelar'},{v:'ok',label:ok,cls:danger?'dangerfill':'primary'}]}).then(v=>v==='ok');
+function ask({title,label,value='',ok}){return new Promise(res=>{
+  const d=$('#dlgAsk'),inp=$('#akInput');$('#akTitle').textContent=title;$('#akLabel').textContent=label;inp.value=value;
+  let out=null;
+  $('#formAsk').onsubmit=e=>{e.preventDefault();out=inp.value.trim();d.close()};
+  $('#akCancel').onclick=()=>d.close();d.onclose=()=>res(out);d.showModal();setTimeout(()=>inp.select(),60);
+})}
+document.querySelectorAll('dialog').forEach(d=>d.addEventListener('click',e=>{if(e.target===d)d.close()}));
+
+/* =============== Orden / filtros =============== */
+function computeVisible(){
+  const n=S.nav;S.sortLocked=false;let arr;
+  if(S.q){const toks=norm(S.q).split(/\s+/).filter(Boolean);arr=S.links.filter(l=>toks.every(t=>l.h.includes(t)))}
+  else if(n.t==='fav')arr=S.links.filter(l=>l.f);
+  else if(n.t==='recent'){S.vis=S.links.slice().sort((a,b)=>b.a-a.a||b.o-a.o).slice(0,100);S.sortLocked=true;return}
+  else if(n.t==='dups'){S.vis=S.links.filter(l=>S.urlCount.get(l.u)>1).sort((a,b)=>a.u<b.u?-1:a.u>b.u?1:a.o-b.o);S.sortLocked=true;return}
+  else if(n.t==='nofolder')arr=S.links.filter(l=>!l.p.length);
+  else if(n.t==='folder'){const k=n.k;arr=S.links.filter(l=>l.pk===k||l.pk.startsWith(k+SEP))}
+  else arr=S.links.slice();
+  switch(S.sort){
+    case 'az':arr.sort((a,b)=>col.compare(a.t,b.t));break;
+    case 'za':arr.sort((a,b)=>col.compare(b.t,a.t));break;
+    case 'new':arr.sort((a,b)=>b.a-a.a||b.o-a.o);break;
+    case 'old':arr.sort((a,b)=>a.a-b.a||a.o-b.o);break;
+    case 'dom':arr.sort((a,b)=>col.compare(a.host,b.host)||col.compare(a.t,b.t));break;
+    default:arr.sort((a,b)=>a.o-b.o);
+  }
+  S.vis=arr;
+}
+
+/* =============== Render =============== */
+function acts(l){
+  return `<button class="act ${l.f?'on':''}" data-act="star" aria-label="${l.f?'Quitar de favoritos':'Marcar favorito'}" title="Favorito">${ic('star')}</button>`+
+  `<button class="act" data-act="move" aria-label="Cambiar categoría" title="Cambiar categoría">${ic('folder')}</button>`+
+  `<button class="act" data-act="edit" aria-label="Editar" title="Editar">${ic('edit')}</button>`+
+  `<button class="act del" data-act="del" aria-label="Eliminar" title="Eliminar">${ic('trash')}</button>`;
+}
+function thumbInner(l){
+  const t=S.thumbs[l.id];
+  if(t)return `<img class="cover" loading="lazy" decoding="async" alt="" src="${t}">`;
+  const icon=l.i>=0?S.icons[l.i]:null,h=hue(l.host);
+  return `<div class="fb" style="--h:${h};--h2:${(h+48)%360}"><span class="tile">${icon?`<img alt="" src="${icon}">`:`<b>${esc((l.host[0]||'?').toUpperCase())}</b>`}</span><span class="dom">${esc(l.host)}</span></div>`;
+}
+const A_ATTR='target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer"';
+function cardHTML(l){
+  const u=esc(l.u);
+  return `<article class="card" data-id="${l.id}"><a class="thumb" href="${u}" ${A_ATTR} tabindex="-1" aria-hidden="true">${thumbInner(l)}</a>`+
+  `<div class="cbody"><a class="ctitle" href="${u}" ${A_ATTR}>${esc(l.t)}</a><div class="cmeta"><span>${esc(l.host)}</span><span class="dot">·</span><span class="cat">${esc(l.cat)}</span></div></div>`+
+  `<div class="acts">${acts(l)}</div></article>`;
+}
+function rowHTML(l){
+  const u=esc(l.u),h=hue(l.host),icon=l.i>=0?S.icons[l.i]:null;
+  const d=l.a?new Date(l.a*1000).toLocaleDateString('es-AR',{day:'2-digit',month:'short',year:'2-digit'}):'';
+  return `<article class="row" data-id="${l.id}"><a class="rico" href="${u}" ${A_ATTR} tabindex="-1" aria-hidden="true" style="--h:${h};--h2:${(h+48)%360}"><span>${icon?`<img alt="" src="${icon}">`:`<b>${esc((l.host[0]||'?').toUpperCase())}</b>`}</span></a>`+
+  `<div class="rmain"><a class="ctitle" href="${u}" ${A_ATTR}>${esc(l.t)}</a><div class="rurl">${esc(l.u)}</div></div>`+
+  `<span class="chip">${esc(l.cat)}</span><span class="rdate">${d}</span><div class="acts">${acts(l)}</div></article>`;
+}
+function more(n=PAGE){
+  const end=Math.min(S.vis.length,S.shown+n);let html='';
+  const f=S.view==='grid'?cardHTML:rowHTML;
+  for(let i=S.shown;i<end;i++)html+=f(S.vis[i]);
+  $('#list').insertAdjacentHTML('beforeend',html);S.shown=end;
+}
+function fill(){
+  let guard=0;const sen=$('#sentinel');
+  while(S.shown<S.vis.length&&sen.getBoundingClientRect().top<innerHeight+900&&guard++<40)more();
+}
+let rafScroll=0;
+$('#main').addEventListener('scroll',()=>{if(rafScroll)return;rafScroll=requestAnimationFrame(()=>{rafScroll=0;fill()})},{passive:true});
+addEventListener('resize',()=>fill());
+
+function navTitle(){
+  const n=S.nav;
+  if(S.q)return {t:`Resultados para “${S.q}”`,s:'Buscando en toda la biblioteca'};
+  if(n.t==='fav')return {t:'Favoritos',s:'Tus enlaces destacados'};
+  if(n.t==='recent')return {t:'Últimos agregados',s:'Los 100 más recientes'};
+  if(n.t==='dups')return {t:'Duplicados',s:'Enlaces con la misma URL, agrupados'};
+  if(n.t==='nofolder')return {t:'Sin carpeta',s:'Enlaces fuera de cualquier carpeta'};
+  if(n.t==='folder'){const p=n.k.split(SEP);return {t:p[p.length-1],s:p.join(' › ')}}
+  return {t:'Todos los enlaces',s:'Tu biblioteca completa'};
+}
+function renderHead(){
+  const h=$('#head');
+  if(!S.links.length){h.innerHTML='';return}
+  const t=navTitle(),c=S.vis.length;
+  let extra='';
+  if(!S.q&&S.nav.t==='folder')extra=`<button class="btn sm" data-fa="rename">Renombrar carpeta</button><button class="btn sm danger" data-fa="delete">Eliminar carpeta</button>`;
+  h.innerHTML=`<div class="grow"><h1>${esc(t.t)}</h1><div class="sub">${c.toLocaleString('es-AR')} ${c===1?'enlace':'enlaces'} · ${esc(t.s)}</div></div>${extra}`;
+}
+function renderFeat(){
+  const f=$('#feat');
+  if(S.nav.t!=='all'||S.q||!S.favs){f.innerHTML='';return}
+  const favs=S.links.filter(l=>l.f).sort((a,b)=>a.o-b.o).slice(0,16);
+  f.innerHTML=`<div class="feathead">Destacados</div><div class="strip">`+favs.map(l=>{
+    const icon=l.i>=0?S.icons[l.i]:null;
+    return `<a class="fchip" href="${esc(l.u)}" ${A_ATTR}>${icon?`<img alt="" src="${icon}">`:`<b>${esc((l.host[0]||'?').toUpperCase())}</b>`}<span>${esc(l.t)}</span></a>`}).join('')+`</div>`;
+}
+function renderSide(){
+  const n=S.nav,q=S.q;
+  const sm=[['all','layers','Todos',S.links.length],['fav','star','Favoritos',S.favs],['recent','clock','Últimos agregados',Math.min(100,S.links.length)]];
+  if(S.dups)sm.push(['dups','copy','Duplicados',S.dups]);
+  if(S.noFolder&&S.noFolder<S.links.length)sm.push(['nofolder','folder','Sin carpeta',S.noFolder]);
+  $('#smart').innerHTML=sm.map(([t,i,name,c])=>`<button class="nbtn ${!q&&n.t===t?'on':''}" data-nav="${t}">${ic(i)}<span class="nm">${name}</span><em>${c.toLocaleString('es-AR')}</em></button>`).join('');
+  const walk=(node,d)=>{
+    let h='';
+    for(const k of node.kids.values()){
+      const hasKids=k.kids.size>0,open=S.open.has(k.key),on=!q&&n.t==='folder'&&n.k===k.key;
+      h+=`<div class="node" style="--d:${d}"><button class="chev ${hasKids?(open?'open':''):'ph'}" data-tg="${esc(k.key)}" aria-label="Expandir">${ic('chev')}</button>`+
+         `<button class="nbtn ${on?'on':''}" data-fold="${esc(k.key)}"><span class="nm">${esc(k.name)}</span><em>${k.n.toLocaleString('es-AR')}</em></button></div>`;
+      if(hasKids&&open)h+=walk(k,d+1);
+    }
+    return h;
+  };
+  $('#tree').innerHTML=S.tree.kids.size?walk(S.tree,0):`<div style="padding:8px 12px;color:var(--muted);font-size:13.5px">Sin carpetas todavía.</div>`;
+}
+function renderEmpty(){
+  const e=$('#empty');
+  if(!S.links.length){
+    e.innerHTML=`<div class="empty"><div><div class="big">✦</div><h2>Tu universo de favoritos empieza acá</h2>
+    <p>Importá el archivo <b>bookmarks.html</b> exportado desde Chrome o Edge. Se lee en tu propio dispositivo y se guarda aquí mismo; no se sube a ningún lado.</p>
+    <button class="btn primary" id="wImport">${ic('upload')} Importar favoritos</button>
+    <div class="steps"><div><b>Chrome</b> · ⋮ → Marcadores y listas → Administrador de marcadores → ⋮ → <i>Exportar marcadores</i>.</div>
+    <div><b>Edge</b> · ⋯ → Favoritos → ⋯ → <i>Exportar favoritos</i>.</div>
+    <div><b>También</b> podés arrastrar el archivo a esta ventana (en computadora) o restaurar una copia <code>.json</code> de este mismo sitio.</div></div></div></div>`;
+    $('#wImport').onclick=()=>$('#file').click();return;
+  }
+  if(!S.vis.length){
+    const msg=S.q?`No encontré nada para “${esc(S.q)}”. Probá con otra palabra, parte de la URL o el nombre de una carpeta.`:
+      S.nav.t==='fav'?'Todavía no marcaste favoritos. Tocá la estrella ★ de cualquier enlace.':'No hay enlaces en esta vista.';
+    e.innerHTML=`<div class="empty"><div><div class="big" style="background:var(--soft);color:var(--accent);box-shadow:none">${ic('search')}</div><h2>Nada por acá</h2><p>${msg}</p></div></div>`;return;
+  }
+  e.innerHTML='';
+}
+function render(keep){
+  if(S.nav.t==='folder'&&!findNode(S.nav.k))S.nav={t:'all'};
+  computeVisible();
+  const main=$('#main'),st=main.scrollTop;
+  $('#sort').disabled=S.sortLocked;
+  renderSide();renderHead();renderFeat();
+  const list=$('#list');list.className=S.view==='grid'?'grid':'rows';list.innerHTML='';S.shown=0;
+  more(Math.max(PAGE,keep||0));renderEmpty();fill();
+  if(keep)main.scrollTop=st;
+  document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===S.view));
+  $('#sort').value=S.sort;
+  $('#searchBox').classList.toggle('has',!!S.q);
+  renderBanner();
+}
+function renderBanner(){
+  const b=$('#banner');let h='';
+  if(S.volatile)h=`<div class="banner warn"><span><b>Almacenamiento no disponible.</b> Este navegador bloquea el guardado local (¿modo privado?). Lo que hagas se perderá al cerrar: exportá una copia de seguridad.</span><button class="btn sm" id="bkNow">Exportar copia</button></div>`;
+  else if(S.links.length){
+    let lb=0,since=0,snooze=0;try{lb=+localStorage.getItem('mbu.lastBackup')||0;since=+localStorage.getItem('mbu.since')||0;snooze=+localStorage.getItem('mbu.snooze')||0}catch(e){}
+    const ref=Math.max(lb,since);
+    if(ref&&Date.now()-ref>14*864e5&&Date.now()>snooze)h=`<div class="banner"><span>Hace más de dos semanas que no hacés una copia de seguridad. Los datos del navegador no se sincronizan ni están a salvo de borrados.</span><button class="btn sm primary" id="bkNow">Exportar ahora</button><button class="btn sm ghost" id="bkLater">Luego</button></div>`;
+  }
+  b.innerHTML=h;
+  const n=$('#bkNow');if(n)n.onclick=exportJSON;
+  const l=$('#bkLater');if(l)l.onclick=()=>{try{localStorage.setItem('mbu.snooze',String(Date.now()+7*864e5))}catch(e){}renderBanner()};
+}
+
+/* =============== Acciones sobre enlaces =============== */
+const byId=id=>S.links.find(l=>l.id===id);
+function toggleFav(id,el){
+  const l=byId(id);if(!l)return;l.f=!l.f;S.favs+=l.f?1:-1;mark('links');
+  if(S.nav.t==='fav'&&!S.q&&!l.f){render(S.shown);return}
+  if(el){el.classList.toggle('on',l.f);el.setAttribute('aria-label',l.f?'Quitar de favoritos':'Marcar favorito')}
+  renderSide();renderFeat();
+}
+function removeLinks(ids,label){
+  const set=new Set(ids),removed=S.links.filter(l=>set.has(l.id)),th={};
+  removed.forEach(l=>{if(S.thumbs[l.id]){th[l.id]=S.thumbs[l.id];delete S.thumbs[l.id]}});
+  S.links=S.links.filter(l=>!set.has(l.id));reindex();mark('links','thumbs');render(S.shown);
+  lastRemoved={removed,th};
+  toast(label,{label:'Deshacer',ms:7000,fn:()=>{
+    if(!lastRemoved)return;S.links.push(...lastRemoved.removed);S.links.sort((a,b)=>a.o-b.o);
+    Object.assign(S.thumbs,lastRemoved.th);lastRemoved=null;reindex();mark('links','thumbs');render(S.shown);toast('Restaurado')}});
+}
+async function deleteLink(id){
+  const l=byId(id);if(!l)return;
+  if(await confirmBox({title:'¿Eliminar este enlace?',text:`“${l.t}” se quitará de tu biblioteca. Podrás deshacerlo unos segundos.`,ok:'Eliminar',danger:true}))
+    removeLinks([id],'Enlace eliminado');
+}
+
+/* Editar / agregar */
+let E={id:null,thumb:'keep',orig:''};
+function allPaths(){const out=[];(function w(n){for(const k of n.kids.values()){out.push(k.path.join(' / '));w(k)}})(S.tree);return out}
+function openEdit(id,focusCat){
+  const l=id?byId(id):null;E={id,thumb:'keep',orig:l?l.p.join(' / '):(S.nav.t==='folder'&&!S.q?S.nav.k.split(SEP).join(' / '):'')};
+  $('#edTitle').textContent=l?'Editar enlace':'Agregar enlace';
+  $('#edT').value=l?l.t:'';$('#edU').value=l?l.u:'';$('#edC').value=E.orig;$('#edErr').textContent='';
+  $('#catList').innerHTML=allPaths().map(p=>`<option value="${esc(p)}">`).join('');
+  setPv(l?S.thumbs[l.id]:null);
+  $('#dlgEdit').showModal();
+  setTimeout(()=>$(focusCat?'#edC':(l?'#edT':'#edU')).focus(),80);
+}
+function setPv(src){$('#edPv').innerHTML=src?`<img alt="" src="${src}">`:'Sin imagen'}
+$('#edPick').onclick=()=>$('#imgFile').click();
+$('#edNoThumb').onclick=()=>{E.thumb=null;setPv(null)};
+$('#imgFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const d=await fileToThumb(f);E.thumb=d;setPv(d)}catch(err){$('#edErr').textContent=err.message||'No se pudo leer la imagen.'}
+});
+function fileToThumb(file){return new Promise((res,rej)=>{
+  const url=URL.createObjectURL(file),img=new Image();
+  img.onload=()=>{try{
+    const sc=Math.min(1,640/img.width),c=document.createElement('canvas');
+    c.width=Math.max(1,Math.round(img.width*sc));c.height=Math.max(1,Math.round(img.height*sc));
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.82))
+  }catch(e){URL.revokeObjectURL(url);rej(new Error('No se pudo procesar la imagen.'))}};
+  img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Ese archivo no parece una imagen válida.'))};
+  img.src=url;
+})}
+$('#edCancel').onclick=()=>$('#dlgEdit').close();
+$('#formEdit').addEventListener('submit',e=>{
+  e.preventDefault();
+  let u=$('#edU').value.trim();
+  if(!u){$('#edErr').textContent='Escribí una URL.';return}
+  if(!/^[a-z][a-z0-9+.\-]*:/i.test(u))u='https://'+u;
+  try{const p=new URL(u);if(!/^https?:$/.test(p.protocol))throw 0;u=p.href}catch(x){$('#edErr').textContent='La URL no es válida. Debe empezar con http:// o https://';return}
+  const t=$('#edT').value.trim()||hostOf(u);
+  const cs=$('#edC').value.trim();
+  let path;const l=E.id?byId(E.id):null;
+  if(l&&cs===E.orig)path=l.p;else path=cs.split('/').map(s=>s.trim()).filter(Boolean);
+  let target=l;
+  if(l){l.t=t;l.u=u;l.p=path}
+  else{target={id:uid(),t,u,p:path,a:now(),f:false,i:-1,o:S.links.reduce((m,x)=>Math.max(m,x.o),0)+1};S.links.push(target)}
+  derive(target);
+  if(E.thumb==='keep'){}else if(E.thumb){S.thumbs[target.id]=E.thumb;mark('thumbs')}else if(S.thumbs[target.id]){delete S.thumbs[target.id];mark('thumbs')}
+  if(path.length)path.forEach((_,i)=>S.open.add(path.slice(0,i+1).join(SEP)));
+  reindex();mark('links');$('#dlgEdit').close();render(S.shown);toast(l?'Cambios guardados':'Enlace agregado');
+});
+
+/* Carpetas */
+async function folderAction(a){
+  if(S.nav.t!=='folder')return;const key=S.nav.k,seg=key.split(SEP),node=findNode(key);if(!node)return;
+  if(a==='rename'){
+    const nn=await ask({title:'Renombrar carpeta',label:'Nuevo nombre',value:seg[seg.length-1]});
+    if(!nn||nn===seg[seg.length-1])return;
+    if(nn.includes(SEP)){toast('Nombre no válido');return}
+    const depth=seg.length-1;
+    for(const l of S.links){if(l.pk===key||l.pk.startsWith(key+SEP)){l.p=l.p.slice();l.p[depth]=nn;derive(l)}}
+    const ns=seg.slice();ns[depth]=nn;S.open.add(ns.join(SEP));S.nav={t:'folder',k:ns.join(SEP)};
+    reindex();mark('links');render();toast('Carpeta renombrada');
+  }else if(a==='delete'){
+    const ids=S.links.filter(l=>l.pk===key||l.pk.startsWith(key+SEP)).map(l=>l.id);
+    if(await confirmBox({title:'¿Eliminar carpeta y su contenido?',text:`Se eliminarán ${ids.length.toLocaleString('es-AR')} enlaces de “${seg.join(' › ')}” (incluye subcarpetas).`,ok:'Eliminar todo',danger:true})){
+      S.nav={t:'all'};removeLinks(ids,`${ids.length} enlaces eliminados`);
+    }
+  }
+}
+
+/* =============== Importar / exportar =============== */
+function parseBackup(text){
+  let o;try{o=JSON.parse(text)}catch(e){throw new Error('El archivo .json está dañado o incompleto.')}
+  if(!o||o.app!=='my-bookmark-universe'||!Array.isArray(o.links))throw new Error('Ese .json no es una copia de My Bookmark Universe.');
+  const icons=[],map=new Map();
+  (Array.isArray(o.icons)?o.icons:[]).forEach((s,i)=>{if(typeof s==='string'&&ICON_OK.test(s)){map.set(i,icons.length);icons.push(s)}});
+  const links=[],folders=new Set();let skipped=0;
+  for(const r of o.links){
+    if(!r||typeof r.u!=='string'||!URL_OK.test(r.u)){skipped++;continue}
+    const p=Array.isArray(r.p)?r.p.map(String).filter(Boolean):[];
+    if(p.length)folders.add(p.join(SEP));
+    const th=typeof r.th==='string'&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+\/=]+$/.test(r.th)?r.th:null;
+    links.push({t:String(r.t||hostOf(r.u)).slice(0,500),u:r.u,p,a:+r.a||0,f:!!r.f,icon:map.has(r.i)?map.get(r.i):null,_thumb:th});
+  }
+  return {links,icons,skipped,folders:folders.size};
+}
+function applyImport(parsed,mode){
+  if(mode==='replace'){S.links=[];S.icons=[];S.thumbs={}}
+  const iconIdx=new Map(S.icons.map((s,i)=>[s,i])),seen=new Set(S.links.map(l=>l.u));
+  let ord=S.links.reduce((m,l)=>Math.max(m,l.o),0),added=0,dup=0;
+  const fresh=[];
+  for(const r of parsed.links){
+    if(mode==='merge'&&seen.has(r.u)){dup++;continue}
+    let i=-1;
+    if(r.icon!=null&&parsed.icons[r.icon]){const s=parsed.icons[r.icon];let k=iconIdx.get(s);if(k===undefined){k=S.icons.push(s)-1;iconIdx.set(s,k)}i=k}
+    const l=hydrate({id:uid(),t:r.t,u:r.u,p:r.p,a:r.a,f:r.f,i,o:++ord});
+    fresh.push(l);seen.add(r.u);if(r._thumb)S.thumbs[l.id]=r._thumb;added++;
+  }
+  for(const l of fresh)S.links.push(l);
+  return {added,dup};
+}
+async function handleFile(file){
+  if(!file)return;
+  busy('Leyendo archivo…');
+  try{
+    if(file.size>400*1024*1024)throw new Error('El archivo es demasiado grande (más de 400 MB).');
+    const text=await file.text();await tick();busy('Procesando enlaces…');await tick();
+    const head=text.slice(0,2000).trimStart();let parsed,kind;
+    if(head[0]==='{'){parsed=parseBackup(text);kind='copia'}
+    else if(/<DL\b|<A\s/i.test(text.slice(0,200000))||/NETSCAPE-Bookmark/i.test(head)){parsed=parseNetscape(text);kind='favoritos'}
+    else throw new Error('No reconozco este archivo. Elegí el bookmarks.html exportado desde Chrome/Edge o una copia .json de esta app.');
+    if(!parsed.links.length)throw new Error('El archivo es válido pero no contiene enlaces http/https.'+(parsed.skipped?` (Se omitieron ${parsed.skipped} enlaces internos del navegador.)`:''));
+    busy(null);
+    let mode='replace';
+    if(S.links.length){
+      mode=await choose({title:`Importar ${parsed.links.length.toLocaleString('es-AR')} enlaces`,
+        text:`Ya tenés ${S.links.length.toLocaleString('es-AR')} enlaces guardados. ¿Qué querés hacer?`,
+        opts:[{v:'',label:'Cancelar'},{v:'merge',label:'Combinar (omite URLs repetidas)',cls:'primary'},{v:'replace',label:'Reemplazar todo',cls:'danger'}]});
+      if(!mode)return;
+      if(mode==='replace'&&!(await confirmBox({title:'¿Reemplazar la biblioteca actual?',text:'Se perderán los cambios (favoritos, ediciones, miniaturas) que no hayas exportado.',ok:'Reemplazar',danger:true})))return;
+    }
+    busy('Guardando…');await tick();
+    const r=applyImport(parsed,mode);
+    S.nav={t:'all'};S.q='';$('#q').value='';reindex();
+    mark('links','icons','thumbs');
+    try{if(!localStorage.getItem('mbu.since'))localStorage.setItem('mbu.since',String(Date.now()))}catch(e){}
+    try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+    render();busy(null);
+    const extra=[];
+    if(parsed.skipped)extra.push(`${parsed.skipped} enlaces internos (chrome://, etc.) omitidos`);
+    if(r.dup)extra.push(`${r.dup} ya existían`);
+    await choose({title:'Importación completada',text:`${r.added.toLocaleString('es-AR')} enlaces agregados en ${parsed.folders.toLocaleString('es-AR')} carpetas${extra.length?' · '+extra.join(' · '):''}.`,opts:[{v:'ok',label:'Listo',cls:'primary'}]});
+  }catch(e){
+    busy(null);console.error(e);
+    await choose({title:'No se pudo importar',text:e.message||String(e),opts:[{v:'ok',label:'Cerrar',cls:'primary'}]});
+  }
+}
+$('#file').addEventListener('change',e=>{const f=e.target.files[0];e.target.value='';handleFile(f)});
+
+function stamp(){return new Date().toISOString().slice(0,10)}
+function download(name,text,type){
+  const b=new Blob([text],{type}),u=URL.createObjectURL(b),a=document.createElement('a');
+  a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),8000);
+}
+function exportJSON(){
+  if(!S.links.length){toast('No hay nada que exportar todavía.');return}
+  try{
+    const used=new Map(),icons=[];
+    const links=S.links.map(l=>{
+      let i=-1;if(l.i>=0){if(!used.has(l.i)){used.set(l.i,icons.length);icons.push(S.icons[l.i])}i=used.get(l.i)}
+      const o={t:l.t,u:l.u,p:l.p,a:l.a,f:l.f,i};if(S.thumbs[l.id])o.th=S.thumbs[l.id];return o;
+    });
+    download(`my-bookmark-universe-${stamp()}.json`,JSON.stringify({app:'my-bookmark-universe',version:1,exportedAt:new Date().toISOString(),icons,links}),'application/json');
+    try{localStorage.setItem('mbu.lastBackup',String(Date.now()))}catch(e){}
+    renderBanner();toast('Copia de seguridad generada. Guardala en Archivos o iCloud Drive.',{ms:5000});
+  }catch(e){toast('No se pudo crear la copia: '+(e.message||e))}
+}
+function exportHTML(){
+  if(!S.links.length){toast('No hay nada que exportar todavía.');return}
+  const root={links:[],kids:new Map()};
+  for(const l of S.links){let n=root;for(const s of l.p){let k=n.kids.get(s);if(!k){k={links:[],kids:new Map()};n.kids.set(s,k)}n=k}n.links.push(l)}
+  const w=n=>{let h='';
+    for(const l of n.links)h+=`<DT><A HREF="${esc(l.u)}" ADD_DATE="${l.a||0}"${l.i>=0?` ICON="${S.icons[l.i]}"`:''}>${esc(l.t)}</A>\n`;
+    for(const [name,k] of n.kids)h+=`<DT><H3>${esc(name)}</H3>\n<DL><p>\n${w(k)}</DL><p>\n`;
+    return h};
+  const out=`<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">\n<TITLE>Bookmarks</TITLE>\n<H1>Bookmarks</H1>\n<DL><p>\n${w(root)}</DL><p>\n`;
+  download(`bookmarks-${stamp()}.html`,out,'text/html');
+  try{localStorage.setItem('mbu.lastBackup',String(Date.now()))}catch(e){}
+  toast('Archivo de favoritos generado.');
+}
+async function openData(){
+  const folders=(function c(n){let t=n.kids.size;for(const k of n.kids.values())t+=c(k)-0;return t})(S.tree);
+  let est='';
+  try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();est=(e.usage/1048576).toFixed(1)+' MB'}}catch(e){}
+  $('#stats').innerHTML=[[S.links.length.toLocaleString('es-AR'),'Enlaces'],[folders.toLocaleString('es-AR'),'Carpetas'],[S.favs.toLocaleString('es-AR'),'Favoritos'],[S.dups.toLocaleString('es-AR'),'Duplicados']].concat(est?[[est,'Espacio usado']]:[]).map(([a,b])=>`<div class="stat"><b>${a}</b><span>${b}</span></div>`).join('');
+  $('#dlgData').showModal();
+}
+$('#btnData').onclick=()=>{closeNav();openData()};
+$('#dClose').onclick=()=>$('#dlgData').close();
+$('#dImport').onclick=()=>{$('#dlgData').close();$('#file').click()};
+$('#dExportJson').onclick=exportJSON;
+$('#dExportHtml').onclick=exportHTML;
+$('#dHelp').onclick=()=>{$('#dlgData').close();$('#dlgHelp').showModal()};
+$('#hClose').onclick=()=>$('#dlgHelp').close();
+$('#dWipe').onclick=async()=>{
+  $('#dlgData').close();
+  if(!S.links.length){toast('La biblioteca ya está vacía.');return}
+  if(await confirmBox({title:'¿Borrar toda la biblioteca?',text:`Se eliminarán ${S.links.length.toLocaleString('es-AR')} enlaces de este dispositivo. Esta acción no se puede deshacer; exportá una copia antes si dudás.`,ok:'Borrar todo',danger:true})){
+    S.links=[];S.icons=[];S.thumbs={};S.nav={t:'all'};S.q='';$('#q').value='';reindex();mark('links','icons','thumbs');render();toast('Biblioteca borrada');
+  }
+};
+
+/* =============== Navegación y eventos =============== */
+function closeNav(){$('#app').classList.remove('nav-open')}
+$('#btnMenu').onclick=()=>$('#app').classList.toggle('nav-open');
+$('#scrim').onclick=closeNav;
+$('#side').addEventListener('click',e=>{
+  const tg=e.target.closest('[data-tg]');
+  if(tg){const k=tg.dataset.tg;S.open.has(k)?S.open.delete(k):S.open.add(k);renderSide();return}
+  const nv=e.target.closest('[data-nav]');
+  if(nv){S.nav={t:nv.dataset.nav};S.q='';$('#q').value='';render();$('#main').scrollTop=0;closeNav();return}
+  const f=e.target.closest('[data-fold]');
+  if(f){const k=f.dataset.fold;S.nav={t:'folder',k};S.q='';$('#q').value='';
+    const p=k.split(SEP);p.forEach((_,i)=>S.open.add(p.slice(0,i+1).join(SEP)));
+    render();$('#main').scrollTop=0;closeNav()}
+});
+$('#content').addEventListener('click',e=>{
+  const fa=e.target.closest('[data-fa]');if(fa){folderAction(fa.dataset.fa);return}
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const id=b.closest('[data-id]').dataset.id;
+  switch(b.dataset.act){case 'star':toggleFav(id,b);break;case 'edit':openEdit(id);break;case 'move':openEdit(id,true);break;case 'del':deleteLink(id)}
+});
+document.querySelectorAll('#viewSeg button').forEach(b=>b.onclick=()=>{S.view=b.dataset.v;savePrefs();render(S.shown)});
+$('#sort').onchange=e=>{S.sort=e.target.value;savePrefs();render()};
+let qT=null;
+$('#q').addEventListener('input',e=>{clearTimeout(qT);qT=setTimeout(()=>{S.q=e.target.value.trim();render();$('#main').scrollTop=0},130)});
+$('#qClear').onclick=()=>{$('#q').value='';S.q='';render();$('#q').focus()};
+$('#btnAdd').onclick=()=>openEdit(null);
+$('#btnTheme').onclick=()=>{S.theme=({auto:'light',light:'dark',dark:'auto'})[S.theme];savePrefs();applyTheme()};
+matchMedia('(prefers-color-scheme:dark)').addEventListener&&matchMedia('(prefers-color-scheme:dark)').addEventListener('change',applyTheme);
+document.addEventListener('keydown',e=>{
+  const tag=(document.activeElement&&document.activeElement.tagName)||'';
+  if(e.key==='/'&&!/INPUT|TEXTAREA|SELECT/.test(tag)){e.preventDefault();$('#q').focus()}
+  else if(e.key==='Escape'&&document.activeElement===$('#q')){$('#q').value='';S.q='';render();$('#q').blur()}
+});
+/* Arrastrar y soltar (computadora) */
+let dragN=0;
+addEventListener('dragenter',e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files')){dragN++;$('#app').classList.add('drop')}});
+addEventListener('dragleave',()=>{if(--dragN<=0){dragN=0;$('#app').classList.remove('drop')}});
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();dragN=0;$('#app').classList.remove('drop');const f=e.dataTransfer&&e.dataTransfer.files[0];if(f)handleFile(f)});
+
+/* Ícono para "Añadir a pantalla de inicio" (generado localmente) */
+(function(){try{
+  const c=document.createElement('canvas');c.width=c.height=180;const x=c.getContext('2d');
+  const g=x.createLinearGradient(0,0,180,180);g.addColorStop(0,'#6c5ce7');g.addColorStop(1,'#a66cff');
+  x.fillStyle=g;x.fillRect(0,0,180,180);x.fillStyle='#fff';x.font='bold 104px -apple-system,Helvetica,sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('✦',90,98);
+  const u=c.toDataURL('image/png');
+  [['apple-touch-icon'],['icon']].forEach(([rel])=>{const l=document.createElement('link');l.rel=rel;l.href=u;document.head.appendChild(l)});
+}catch(e){}})();
+
+/* =============== Arranque =============== */
+async function init(){
+  document.querySelectorAll('[data-i]').forEach(el=>el.insertAdjacentHTML('afterbegin',ic(el.dataset.i)));
+  loadPrefs();applyTheme();
+  try{
+    db=await openDB();
+    const [links,icons,thumbs]=await Promise.all([idbGet('links'),idbGet('icons'),idbGet('thumbs')]);
+    S.links=(links||[]).map(hydrate);S.icons=icons||[];S.thumbs=thumbs||{};
+    try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  }catch(e){
+    console.error(e);S.volatile=true;
+  }
+  reindex();render();
+}
+init();
+</script>
+</body>
+</html>
